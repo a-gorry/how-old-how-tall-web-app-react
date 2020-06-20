@@ -1,0 +1,49 @@
+service: howoldhowtall
+plugins:
+  - serverless-s3-sync
+
+custom:
+  siteName: howoldhowtall.com
+  hostedZoneName: howoldhowtall.com
+  aliasHostedZoneId: Z08658321F3CB4X92BCV5    # us-east-1
+  aliasDNSName: s3-website-eu-west-2.amazonaws.com
+  s3Sync:
+    - bucketName: ${self:custom.hostedZoneName}
+      localDir: build/
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  region: eu-west-2
+
+resources:
+  Resources:
+    StaticSite:
+      Type: AWS::S3::Bucket
+      Properties:
+        AccessControl: PublicRead
+        BucketName: ${self:custom.siteName}
+        WebsiteConfiguration:
+          IndexDocument: index.html
+    StaticSiteS3BucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket:
+          Ref: StaticSite
+        PolicyDocument:
+          Statement:
+            - Sid: PublicReadGetObject
+              Effect: Allow
+              Principal: "*"
+              Action:
+              - s3:GetObject
+              Resource:
+                Fn::Join: [
+                  "", [
+                    "arn:aws:s3:::",
+                    {
+                      "Ref": "StaticSite"
+                    },
+                    "/*"
+                  ]
+                ]
